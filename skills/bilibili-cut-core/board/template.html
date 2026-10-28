@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>剪辑方案</title>
+<style>
+  :root {
+    --cedar: #243028;
+    --cedar-deep: #1a2420;
+    --card: #f3f6f1;
+    --ink: #1a2118;
+    --muted: #4d564b;
+    --line: #d5ddd0;
+    --mint: #7ee8b0;
+    --mint-deep: #1f8a72;
+    --blaze: #f5c518;
+    --dust: #8d8678;
+    --danger: #9a4032;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--cedar);
+    color: var(--card);
+    font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+    line-height: 1.45;
+    padding-bottom: 128px;
+  }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+  header, main { width: min(1080px, calc(100% - 32px)); margin: 0 auto; }
+  header { padding: 36px 0 8px; }
+  .kicker {
+    margin: 0 0 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: "Avenir Next Condensed", "DIN Alternate", sans-serif;
+    font-size: 15px;
+    color: var(--mint);
+  }
+  h1 { margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -0.02em; }
+  h1 input, .field input, .field textarea, .beat input, .beat textarea, .sub, .cover-fields input {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
+    padding: 4px 0;
+  }
+  h1 input { font-size: 34px; font-weight: 600; letter-spacing: -0.02em; }
+  h1 input:focus, .field textarea:focus, .sub:focus, .cover-fields input:focus, .beat input:focus, .beat textarea:focus {
+    border-bottom-color: var(--mint);
+    outline: none;
+  }
+  .spine-label { display: block; margin: 22px 0 6px; color: var(--mint); font-size: 13px; }
+  #spine {
+    width: 100%;
+    min-height: 74px;
+    resize: vertical;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    font-family: "Songti SC", "STSong", serif;
+    font-size: 26px;
+    line-height: 1.35;
+    color: #f7f3ea;
+  }
+  h2 { margin: 0 0 10px; font-size: 15px; font-weight: 600; letter-spacing: 0.04em; }
+  .split { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; margin-top: 28px; }
+  .panel, .clip, .cover-card {
+    background: var(--card);
+    color: var(--ink);
+    border-radius: 14px;
+  }
+  .panel { padding: 16px 16px 12px; }
+  .field textarea, .beat textarea, .sub { resize: vertical; color: var(--ink); }
+  #approach { min-height: 120px; }
+  .hint { margin: 0 0 14px; color: #c5d0c6; font-size: 14px; }
+  section.block { margin-top: 28px; }
+  .samples { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .samples img { width: 100%; border-radius: 12px; display: block; background: #111; }
+  #beats { display: flex; flex-direction: column; gap: 8px; }
+  .beat { padding: 8px 10px; background: #e7eee4; border-radius: 10px; }
+  .beat-row, .clip-tools, .bar-actions, .cover-fields { display: flex; gap: 8px; align-items: center; }
+  .beat input { font-weight: 600; }
+  .beat textarea { min-height: 36px; font-size: 13px; color: var(--muted); }
+  .icon, .text-btn, .keep, .handle {
+    border: 0;
+    background: #e1e8de;
+    color: var(--ink);
+    border-radius: 999px;
+  }
+  .icon { width: 28px; height: 28px; flex: 0 0 28px; }
+  .text-btn, #add-beat { padding: 6px 12px; background: transparent; color: var(--mint-deep); border: 0; }
+  #add-beat { margin-top: 8px; padding-left: 0; }
+  #route { position: relative; margin: 8px 0 0 92px; display: flex; flex-direction: column; gap: 12px; }
+  #route::before {
+    content: "";
+    position: absolute;
+    left: -28px;
+    top: 22px;
+    bottom: 22px;
+    width: 2px;
+    background: var(--mint);
+  }
+  .clip { position: relative; display: grid; grid-template-columns: 168px 1fr; gap: 14px; padding: 12px; }
+  .clip::before {
+    content: "";
+    position: absolute;
+    left: -35px;
+    top: 26px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--blaze);
+    box-shadow: 0 0 0 4px var(--cedar);
+  }
+  .clip.is-dropped { opacity: 0.62; }
+  .clip.is-dropped::before { background: transparent; border: 2px solid var(--dust); box-shadow: 0 0 0 4px var(--cedar); }
+  .clip.is-invalid { box-shadow: inset 0 0 0 2px var(--danger); }
+  .clock {
+    position: absolute;
+    left: -92px;
+    top: 22px;
+    width: 48px;
+    text-align: right;
+    font-family: "Avenir Next Condensed", "DIN Alternate", sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--mint);
+  }
+  .thumb { width: 168px; height: 94px; object-fit: cover; border-radius: 8px; background: #d5ddd0; display: block; }
+  .nothumb { width: 168px; height: 94px; border-radius: 8px; background: #d5ddd0; color: var(--muted); display: grid; place-items: center; font-size: 13px; }
+  .meta { margin: 0 0 6px; color: var(--muted); font-size: 12px; }
+  .speech { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+  .sub { min-height: 58px; font-size: 16px; }
+  .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+  .times { display: flex; gap: 10px; margin-top: 8px; }
+  .times label { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+  .times input { width: 88px; background: #e7eee4; border: 0; border-radius: 8px; padding: 4px 8px; color: var(--ink); }
+  .keep[aria-pressed="true"] { background: var(--blaze); }
+  .keep[aria-pressed="false"] { background: #e1e8de; color: var(--dust); }
+  select.beat-pick { background: #e7eee4; border: 0; border-radius: 8px; padding: 4px 8px; color: var(--ink); }
+  .handle { cursor: grab; }
+  #covers { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .cover-card { padding: 8px; position: relative; }
+  .cover-card img, .cover-card .nothumb { width: 100%; height: 124px; }
+  .cover-card input { position: absolute; top: 16px; left: 16px; width: 18px; height: 18px; accent-color: var(--mint-deep); }
+  .cover-card:has(input:checked) { box-shadow: inset 0 0 0 3px var(--blaze); }
+  .cover-fields { margin-top: 12px; }
+  .cover-fields label { flex: 1; font-size: 13px; color: #c5d0c6; }
+  .cover-fields input { color: var(--card); font-size: 18px; }
+  .voice-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .voice-card {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: var(--card);
+    color: var(--ink);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .voice-card strong { display: block; font-size: 18px; }
+  .voice-card .detail { display: block; margin-top: 4px; color: var(--muted); font-size: 14px; }
+  .voice-card input { width: 18px; height: 18px; margin-top: 4px; accent-color: var(--mint-deep); }
+  .voice-card:has(input:checked) { box-shadow: inset 0 0 0 3px var(--blaze); }
+  .voice-choices.three { grid-template-columns: repeat(3, 1fr); }
+  #voice-panel, .cover-fields { scroll-margin-bottom: 140px; }
+  .fit { margin: 6px 0 0; font-size: 12px; color: var(--mint-deep); }
+  .fit.is-tight { color: var(--danger); }
+  #narration { background: var(--card); color: var(--ink); border-radius: 14px; padding: 16px 18px; font-family: "Songti SC", "STSong", serif; font-size: 18px; line-height: 1.8; white-space: pre-wrap; }
+  #narration .seam { color: var(--dust); }
+  .settings { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .setting { background: var(--card); color: var(--ink); border-radius: 14px; padding: 12px 14px; }
+  .setting h3 { margin: 0 0 8px; font-size: 14px; }
+  .setting label { display: flex; gap: 8px; align-items: center; font-size: 14px; margin: 4px 0; }
+  .setting select, .setting input[type=text], .setting input[type=number] { background: #e7eee4; border: 0; border-radius: 8px; padding: 4px 8px; color: var(--ink); width: 100%; }
+  .setting audio { width: 100%; height: 32px; margin: 2px 0 6px; }
+  .setting .credit { font-size: 12px; color: var(--muted); margin: 0 0 6px 26px; }
+  .map-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+  #bar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: var(--cedar-deep);
+    border-top: 1px solid #314038;
+  }
+  #stats { margin: 0; font-family: "Avenir Next Condensed", "DIN Alternate", sans-serif; font-size: 22px; }
+  #status { margin: 0; flex: 1; color: var(--mint); font-size: 14px; }
+  #draft, #reset { background: transparent; color: var(--card); border: 1px solid #5c6b62; border-radius: 999px; padding: 8px 14px; }
+  #go { background: var(--blaze); color: var(--cedar-deep); border: 0; border-radius: 999px; padding: 10px 18px; font-weight: 650; }
+  #status.is-confirmed { color: var(--blaze); }
+  @media (max-width: 760px) {
+    .split, .clip { grid-template-columns: 1fr; }
+    #route { margin-left: 0; }
+    #route::before, .clock, .clip::before { display: none; }
+    .thumb, .nothumb { width: 100%; }
+    .voice-choices, .voice-choices.three, .samples { grid-template-columns: 1fr; }
+    #bar { flex-wrap: wrap; }
+    h1, h1 input, #spine { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <p class="kicker" id="kicker"></p>
+  <h1><input id="title" aria-label="标题"></h1>
+  <label class="spine-label" for="spine">这条片子在讲</label>
+  <textarea id="spine"></textarea>
+</header>
+<main>
+  <div class="split">
+    <section class="panel">
+      <h2>剪法</h2>
+      <div class="field"><textarea id="approach" aria-label="剪法"></textarea></div>
+    </section>
+    <section class="panel">
+      <h2>段落</h2>
+      <div id="beats"></div>
+      <button id="add-beat" type="button">加一段</button>
+    </section>
+  </div>
+  <section class="block" id="map-samples" hidden>
+    <h2>画面</h2>
+    <p class="hint">实拍铺满。右上角一张路线图，黄线是已经走过的，浅线是还没走的，圆点停在这一段的位置。字幕仍在底下。</p>
+    <div class="samples"></div>
+  </section>
+  <section class="block">
+    <h2>按拍摄时间</h2>
+    <p class="hint">勾掉的不会进成片。拖左侧圆点，或用上下箭头改顺序。</p>
+    <div id="route"></div>
+  </section>
+  <section class="block" id="narration-panel" hidden>
+    <h2>旁白连起来读</h2>
+    <p class="hint">留下的段按顺序接在一起。这里读着不顺，成片里也不会顺。灰色竖线是换镜头的地方。</p>
+    <div id="narration"></div>
+  </section>
+  <section class="block" id="voice-panel" hidden>
+    <h2 id="voice-title">没解说的段怎么配</h2>
+    <p class="hint">先选一个。没选之前不能按「按这个剪」。</p>
+    <div class="voice-choices">
+      <label class="voice-card">
+        <input type="radio" name="voice" value="card">
+        <span><strong>只上字幕</strong><span class="detail">不出声，旁白就是画面上的字。每句的时长按字数给够。</span></span>
+      </label>
+      <label class="voice-card">
+        <input type="radio" name="voice" value="self">
+        <span><strong>我自己念</strong><span class="detail">文案定下来之后等你的录音，不合成。</span></span>
+      </label>
+    </div>
+  </section>
+  <section class="block">
+    <h2>声音和画面</h2>
+    <div class="settings">
+      <div class="setting">
+        <h3>现场原声</h3>
+        <select id="field-volume" aria-label="现场原声">
+          <option value="1">保留</option>
+          <option value="0.3">压低，留点风声</option>
+          <option value="0">不要</option>
+        </select>
+      </div>
+      <div class="setting">
+        <h3>镜头之间</h3>
+        <select id="transition" aria-label="转场">
+          <option value="cut">直接切</option>
+          <option value="black">黑场过渡</option>
+        </select>
+      </div>
+      <div class="setting" id="music-setting">
+        <h3>配乐</h3>
+        <div id="music-options"></div>
+        <label><input type="radio" name="music" value=""> 不要配乐</label>
+        <label>大小
+          <select id="music-volume" aria-label="配乐大小">
+            <option value="-4">轻</option>
+            <option value="0" selected>中</option>
+            <option value="3">重</option>
+          </select>
+        </label>
+      </div>
+      <div class="setting" id="map-setting" hidden>
+        <h3>路线图</h3>
+        <label><input type="checkbox" id="map-on"> 右上角放跟着走的路线图</label>
+        <div class="map-fields">
+          <input type="text" id="map-title" placeholder="路线名" aria-label="路线名">
+          <input type="number" id="map-km" placeholder="全程公里，空着按定位算" aria-label="全程公里" min="0" step="0.1">
+          <input type="text" id="map-from" placeholder="起点" aria-label="起点">
+          <input type="text" id="map-to" placeholder="终点" aria-label="终点">
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="block">
+    <h2>封面</h2>
+    <div id="covers"></div>
+    <div class="cover-fields">
+      <label>上行<input id="cap-top" aria-label="封面上行"></label>
+      <label>下行<input id="cap-bottom" aria-label="封面下行"></label>
+    </div>
+  </section>
+</main>
+<div id="bar">
+  <p id="stats"></p>
+  <p id="status"></p>
+  <div class="bar-actions">
+    <button id="reset" type="button">恢复最初建议</button>
+    <button id="draft" type="button">先存着</button>
+    <button id="go" type="button">按这个剪</button>
+  </div>
+</div>
+<script>
+/*__ANALYSIS__*/
+const A = window.ANALYSIS;
+const storageKey = A ? "route-cut:" + A.board_id : "";
+let beatSeq = 0;
+let selectedCover = "";
+
+function clock(value) {
+  const match = String(value || "").match(/T(\d{2}):(\d{2})/) || String(value || "").match(/(\d{2}):(\d{2})/);
+  return match ? match[1] + ":" + match[2] : "——";
+}
+function pixels(clip) {
+  const w = clip.width || 0;
+  if (w >= 3000) return "4K";
+  if (w >= 1800) return "1080p";
+  if (w >= 1200) return "720p";
+  return w ? w + "p" : "";
+}
+function beatList() {
+  return [...document.querySelectorAll("#beats .beat")].map((el) => ({
+    id: el.dataset.id,
+    label: el.querySelector(".beat-label").value.trim() || "未命名",
+    note: el.querySelector(".beat-note").value.trim()
+  }));
+}
+function refreshBeatOptions() {
+  const beats = beatList();
+  document.querySelectorAll("select.beat-pick").forEach((select) => {
+    const current = select.value;
+    select.replaceChildren();
+    const empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = "不归段";
+    select.append(empty);
+    beats.forEach((beat) => {
+      const option = document.createElement("option");
+      option.value = beat.id;
+      option.textContent = beat.label;
+      select.append(option);
+    });
+    select.value = [...select.options].some((item) => item.value === current) ? current : "";
+  });
+}
+function addBeat(beat) {
+  beatSeq += 1;
+  const id = beat.id || ("b" + beatSeq);
+  const el = document.createElement("div");
+  el.className = "beat";
+  el.dataset.id = id;
+  el.innerHTML = '<div class="beat-row"><input class="beat-label" aria-label="段落名"><button type="button" class="icon up" aria-label="段落上移">↑</button><button type="button" class="icon down" aria-label="段落下移">↓</button><button type="button" class="icon del" aria-label="删除段落">×</button></div><textarea class="beat-note" aria-label="这段在讲什么"></textarea>';
+  el.querySelector(".beat-label").value = beat.label || "";
+  el.querySelector(".beat-note").value = beat.note || "";
+  el.querySelector(".up").addEventListener("click", () => {
+    const prev = el.previousElementSibling;
+    if (prev) el.parentNode.insertBefore(el, prev);
+    refreshBeatOptions();
+  });
+  el.querySelector(".down").addEventListener("click", () => {
+    const next = el.nextElementSibling;
+    if (next) el.parentNode.insertBefore(next, el);
+    refreshBeatOptions();
+  });
+  el.querySelector(".del").addEventListener("click", () => {
+    el.remove();
+    refreshBeatOptions();
+  });
+  el.querySelector(".beat-label").addEventListener("input", refreshBeatOptions);
+  document.getElementById("beats").append(el);
+}
+function setKeep(el, keep) {
+  el.dataset.keep = keep ? "1" : "0";
+  el.classList.toggle("is-dropped", !keep);
+  const button = el.querySelector(".keep");
+  button.setAttribute("aria-pressed", keep ? "true" : "false");
+  button.textContent = keep ? "留着" : "丢掉";
+}
+function renderClip(clip) {
+  const el = document.createElement("article");
+  el.className = "clip";
+  el.dataset.id = clip.id;
+  el.dataset.file = clip.file;
+  el.dataset.kind = clip.kind;
+  el.dataset.captured = clip.captured || "";
+  el.dataset.duration = clip.duration || 0;
+  el.dataset.width = clip.width || 0;
+  el.dataset.height = clip.height || 0;
+  el.dataset.thumb = clip.thumb || "";
+  el.dataset.speech = clip.speech || "";
+  el.dataset.note = clip.note || "";
+  el.dataset.voiced = JSON.stringify(clip.voiced || []);
+  const preview = clip.thumb
+    ? '<img class="thumb" alt="" src="' + clip.thumb + '">'
+    : '<div class="nothumb">没有预览</div>';
+  const when = clip.kind === "photo" ? "停留" : "出点";
+  el.innerHTML = '<span class="clock"></span>' + preview + '<div><p class="meta"></p><p class="speech"></p><textarea class="sub" aria-label="字幕"></textarea><div class="times"><label>进点<input class="in" type="number" min="0" step="0.1"' + (clip.kind === "photo" ? " hidden" : "") + '></label><label>' + when + '<input class="out" type="number" min="0" step="0.1"></label></div><div class="clip-tools"><button type="button" class="handle" draggable="true" aria-label="拖动排序">⋮⋮</button><button type="button" class="icon up" aria-label="上移">↑</button><button type="button" class="icon down" aria-label="下移">↓</button><select class="beat-pick" aria-label="归到哪一段"></select><button type="button" class="keep"></button></div><p class="fit" hidden></p><p class="note"></p></div>';
+  el.querySelector(".clock").textContent = clock(clip.captured);
+  const kind = clip.kind === "photo" ? "照片" : pixels(clip);
+  el.querySelector(".meta").textContent = [clock(clip.captured), kind, clip.file].filter(Boolean).join(" · ");
+  el.querySelector(".speech").textContent = clip.speech
+    ? "听到：" + clip.speech
+    : clip.audio_event === "BGM" ? "只有车里的歌，不当口播。下面是旁白稿" : "这段没说话，下面是旁白稿";
+  el.querySelector(".sub").value = clip.subtitle || "";
+  const max = Number(clip.duration) || 0;
+  const inn = el.querySelector(".in");
+  const out = el.querySelector(".out");
+  inn.max = max;
+  out.max = clip.kind === "photo" ? 12 : max;
+  inn.value = clip.in_sec ?? 0;
+  out.value = clip.out_sec ?? max;
+  el.querySelector(".note").textContent = clip.note || "";
+  if (!clip.note) el.querySelector(".note").hidden = true;
+  setKeep(el, clip.keep !== false);
+  el.querySelector(".keep").addEventListener("click", () => {
+    setKeep(el, el.dataset.keep !== "1");
+    updateStats();
+  });
+  el.querySelector(".up").addEventListener("click", () => {
+    const prev = el.previousElementSibling;
+    if (prev) el.parentNode.insertBefore(el, prev);
+    updateStats();
+  });
+  el.querySelector(".down").addEventListener("click", () => {
+    const next = el.nextElementSibling;
+    if (next) el.parentNode.insertBefore(next, el);
+    updateStats();
+  });
+  const handle = el.querySelector(".handle");
+  handle.addEventListener("dragstart", (event) => {
+    el.classList.add("is-dragging");
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", clip.id);
+  });
+  handle.addEventListener("dragend", () => el.classList.remove("is-dragging"));
+  el.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    const dragging = document.querySelector(".clip.is-dragging");
+    if (!dragging || dragging === el) return;
+    const after = event.clientY > el.getBoundingClientRect().top + el.offsetHeight / 2;
+    el.parentNode.insertBefore(dragging, after ? el.nextSibling : el);
+  });
+  inn.addEventListener("input", updateStats);
+  out.addEventListener("input", updateStats);
+  document.getElementById("route").append(el);
+  const select = el.querySelector(".beat-pick");
+  refreshBeatOptions();
+  select.value = clip.beat || "";
+}
+function renderCovers(covers) {
+  const wrap = document.getElementById("covers");
+  wrap.replaceChildren();
+  covers.forEach((cover, index) => {
+    const card = document.createElement("label");
+    card.className = "cover-card";
+    card.dataset.id = cover.id;
+    card.dataset.file = cover.file;
+    card.dataset.kind = cover.kind || "video";
+    card.dataset.time = cover.time || 0;
+    const img = cover.thumb
+      ? '<img alt="" src="' + cover.thumb + '">'
+      : '<div class="nothumb">没有预览</div>';
+    card.innerHTML = '<input type="radio" name="cover" value="' + cover.id + '">' + img;
+    card.querySelector("input").addEventListener("change", () => selectCover(cover.id));
+    wrap.append(card);
+    if (index === 0) selectedCover = cover.id;
+  });
+}
+function selectCover(id) {
+  const previous = document.querySelector("#covers .cover-card input:checked");
+  if (previous && previous.value !== id) saveCoverEdit(previous.value);
+  selectedCover = id;
+  const card = [...document.querySelectorAll("#covers .cover-card")].find((el) => el.dataset.id === id);
+  const input = card.querySelector("input");
+  input.checked = true;
+  const stored = coverEdits[id] || coverDefaults[id];
+  document.getElementById("cap-top").value = stored.caption_top || "";
+  document.getElementById("cap-bottom").value = stored.caption_bottom || "";
+}
+const coverEdits = {};
+const coverDefaults = {};
+function saveCoverEdit(id) {
+  if (!id) return;
+  coverEdits[id] = {
+    caption_top: document.getElementById("cap-top").value.trim(),
+    caption_bottom: document.getElementById("cap-bottom").value.trim()
+  };
+}
+function fmt(seconds) {
+  const whole = Math.max(0, Math.round(seconds));
+  const m = Math.floor(whole / 60);
+  const s = whole % 60;
+  return m + ":" + String(s).padStart(2, "0");
+}
+const READ_CPS = 6;
+const SPOKEN_CPS = 4.5;
+function units(text) {
+  let total = 0;
+  for (const ch of text) {
+    if (/\s/.test(ch)) continue;
+    total += ch.charCodeAt(0) < 128 ? 0.5 : 1;
+  }
+  return total;
+}
+function fieldLevel() {
+  return Number(document.getElementById("field-volume").value);
+}
+function isDub(el) {
+  if (!el.querySelector(".sub").value.trim()) return false;
+  return fieldLevel() === 0 || !(el.dataset.speech || "").trim();
+}
+function dubClips() {
+  return [...document.querySelectorAll("#route .clip")].filter((el) => el.dataset.keep === "1" && isDub(el));
+}
+function voiceMode() {
+  if (!dubClips().length) return "field";
+  const picked = document.querySelector("input[name=voice]:checked");
+  return picked ? picked.value : "";
+}
+function needSeconds(el) {
+  const lines = el.querySelector(".sub").value.split("\n").map((line) => line.trim()).filter(Boolean);
+  const count = lines.reduce((sum, line) => sum + units(line), 0);
+  const picked = document.querySelector("input[name=voice]:checked");
+  if (picked && picked.value !== "card") return count / SPOKEN_CPS + 0.6;
+  return count / READ_CPS + 0.5 * lines.length + 0.6;
+}
+function updateFit(el) {
+  const hint = el.querySelector(".fit");
+  if (el.dataset.keep !== "1" || !isDub(el)) {
+    hint.hidden = true;
+    return;
+  }
+  const inn = el.dataset.kind === "photo" ? 0 : Number(el.querySelector(".in").value) || 0;
+  const out = Number(el.querySelector(".out").value) || 0;
+  const have = out - inn;
+  const need = needSeconds(el);
+  const room = el.dataset.kind === "photo" ? 0 : (Number(el.dataset.duration) || 0) - inn;
+  hint.hidden = false;
+  hint.classList.toggle("is-tight", need > have + 0.05);
+  if (need <= have + 0.05) {
+    hint.textContent = "旁白约 " + need.toFixed(1) + " 秒，画面 " + have.toFixed(1) + " 秒，够。";
+  } else if (need <= room) {
+    hint.textContent = "旁白约 " + need.toFixed(1) + " 秒，画面只有 " + have.toFixed(1) + " 秒，会把出点往后挪。";
+  } else if (el.dataset.kind === "photo") {
+    hint.textContent = "旁白约 " + need.toFixed(1) + " 秒，照片会停这么久。";
+  } else {
+    hint.textContent = "旁白约 " + need.toFixed(1) + " 秒，整段素材也只有 " + room.toFixed(1) + " 秒，会放慢画面或定格，最好删几个字。";
+  }
+}
+function updateNarration() {
+  const panel = document.getElementById("narration-panel");
+  const parts = dubClips().map((el) => el.querySelector(".sub").value.split("\n").map((line) => line.trim()).filter(Boolean).join(""));
+  panel.hidden = A.style !== "scenic" && parts.length < 3;
+  const box = document.getElementById("narration");
+  box.replaceChildren();
+  parts.forEach((text, index) => {
+    if (index) {
+      const seam = document.createElement("span");
+      seam.className = "seam";
+      seam.textContent = " | ";
+      box.append(seam);
+    }
+    box.append(document.createTextNode(text));
+  });
+}
+function updateStats() {
+  let count = 0;
+  let total = 0;
+  document.querySelectorAll("#route .clip").forEach((el) => {
+    const inn = Number(el.querySelector(".in").value) || 0;
+    const out = Number(el.querySelector(".out").value) || 0;
+    const bad = el.dataset.keep === "1" && out <= inn;
+    el.classList.toggle("is-invalid", bad);
+    if (el.dataset.keep === "1" && out > inn) {
+      count += 1;
+      total += Math.max(out - inn, isDub(el) ? needSeconds(el) : 0);
+    }
+    updateFit(el);
+  });
+  document.getElementById("stats").textContent = "保留 " + count + " 段 · 约 " + fmt(total);
+  const panel = document.getElementById("voice-panel");
+  if (panel) panel.hidden = dubClips().length === 0;
+  updateNarration();
+}
+function musicChoice() {
+  const picked = document.querySelector("input[name=music]:checked");
+  if (!picked || !picked.value) return null;
+  const option = (A.music_options || []).find((item) => item.file === picked.value) || {};
+  return {
+    file: picked.value,
+    title: option.title || "",
+    credit: option.credit || "",
+    source_url: option.source_url || "",
+    license: option.license || "",
+    license_url: option.license_url || "",
+    volume_db: Number(document.getElementById("music-volume").value) || 0
+  };
+}
+function mapChoice() {
+  return {
+    enabled: !document.getElementById("map-setting").hidden && document.getElementById("map-on").checked,
+    title: document.getElementById("map-title").value.trim(),
+    from: document.getElementById("map-from").value.trim(),
+    to: document.getElementById("map-to").value.trim(),
+    km: Number(document.getElementById("map-km").value) || 0
+  };
+}
+function applySettings(state) {
+  if (state.field_volume !== undefined && state.field_volume !== null) {
+    const select = document.getElementById("field-volume");
+    const value = String(state.field_volume);
+    if ([...select.options].some((item) => item.value === value)) select.value = value;
+  } else if (state.mute_field) {
+    document.getElementById("field-volume").value = "0";
+  }
+  if (state.transition) document.getElementById("transition").value = state.transition;
+  else if (state.black_fade) document.getElementById("transition").value = "black";
+  if (state.music !== undefined) {
+    const value = state.music && state.music.file ? state.music.file : "";
+    const radio = [...document.querySelectorAll("input[name=music]")].find((item) => item.value === value);
+    if (radio) radio.checked = true;
+    if (state.music && state.music.volume_db !== undefined) document.getElementById("music-volume").value = String(state.music.volume_db);
+  }
+  const map = state.map || (state.map_overlay ? { enabled: true } : null);
+  if (map) {
+    document.getElementById("map-on").checked = !!map.enabled;
+    if (map.title) document.getElementById("map-title").value = map.title;
+    if (map.from) document.getElementById("map-from").value = map.from;
+    if (map.to) document.getElementById("map-to").value = map.to;
+    if (map.km) document.getElementById("map-km").value = map.km;
+  }
+}
+function renderMusic() {
+  const wrap = document.getElementById("music-options");
+  (A.music_options || []).forEach((option) => {
+    const label = document.createElement("label");
+    const radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = "music";
+    radio.value = option.file;
+    label.append(radio, document.createTextNode(" " + (option.title || option.file)));
+    wrap.append(label);
+    const audio = document.createElement("audio");
+    audio.controls = true;
+    audio.preload = "none";
+    audio.src = option.file;
+    wrap.append(audio);
+    if (option.credit || option.note) {
+      const credit = document.createElement("p");
+      credit.className = "credit";
+      credit.textContent = [option.note, option.credit].filter(Boolean).join(" · ");
+      wrap.append(credit);
+    }
+  });
+  const none = document.querySelector('input[name=music][value=""]');
+  if (!(A.music_options || []).length) none.checked = true;
+}
+function collect(confirmed) {
+  saveCoverEdit(selectedCover);
+  const card = [...document.querySelectorAll("#covers .cover-card")].find((el) => el.dataset.id === selectedCover);
+  const captions = coverEdits[selectedCover] || { caption_top: "", caption_bottom: "" };
+  return {
+    confirmed,
+    saved_at: new Date().toISOString(),
+    board_id: A.board_id,
+    style: A.style,
+    route: A.route,
+    date: A.date,
+    title: document.getElementById("title").value.trim(),
+    spine: document.getElementById("spine").value.trim(),
+    approach: document.getElementById("approach").value.trim(),
+    description: A.description || "",
+    tags: A.tags || [],
+    voice_mode: voiceMode(),
+    field_volume: fieldLevel(),
+    transition: document.getElementById("transition").value,
+    music: musicChoice(),
+    map: mapChoice(),
+    resolution: A.resolution || "",
+    beats: beatList(),
+    clips: [...document.querySelectorAll("#route .clip")].map((el, order) => ({
+      id: el.dataset.id,
+      file: el.dataset.file,
+      kind: el.dataset.kind,
+      captured: el.dataset.captured,
+      duration: Number(el.dataset.duration) || 0,
+      width: Number(el.dataset.width) || 0,
+      height: Number(el.dataset.height) || 0,
+      thumb: el.dataset.thumb,
+      speech: el.dataset.speech,
+      voiced: JSON.parse(el.dataset.voiced || "[]"),
+      subtitle: el.querySelector(".sub").value.trim(),
+      keep: el.dataset.keep === "1",
+      beat: el.querySelector(".beat-pick").value,
+      in_sec: Number(el.querySelector(".in").value) || 0,
+      out_sec: Number(el.querySelector(".out").value) || 0,
+      note: el.dataset.note,
+      order
+    })),
+    cover: card ? {
+      id: card.dataset.id,
+      file: card.dataset.file,
+      kind: card.dataset.kind,
+      time: Number(card.dataset.time) || 0,
+      caption_top: captions.caption_top,
+      caption_bottom: captions.caption_bottom
+    } : null
+  };
+}
+function remember() {
+  if (!storageKey) return;
+  localStorage.setItem(storageKey, JSON.stringify(collect(false)));
+}
+function setStatus(text, confirmed) {
+  const el = document.getElementById("status");
+  el.textContent = text;
+  el.classList.toggle("is-confirmed", !!confirmed);
+}
+async function save(confirmed) {
+  const payload = collect(confirmed);
+  if (confirmed) {
+    if (!payload.title) return setStatus("先写标题");
+    if (!payload.clips.some((clip) => clip.keep)) return setStatus("至少留一段");
+    if (payload.clips.some((clip) => clip.keep && clip.out_sec <= clip.in_sec)) return setStatus("有一段出点不比进点晚");
+    if (!payload.cover) return setStatus("选一张封面");
+    if (!payload.voice_mode) return setStatus("先选旁白怎么出");
+    if (payload.map.enabled && !payload.map.title) return setStatus("路线图要写个路线名");
+  }
+  try {
+    const response = await fetch("/api/decision", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error(String(response.status));
+    const done = payload.voice_mode === "self"
+      ? "已记下。等你的录音，先不出成片。"
+      : "已记下。回到对话里说开始剪。";
+    setStatus(confirmed ? done : "草稿已记下。想先看节奏，在对话里说出个预览。", confirmed);
+  } catch (error) {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "edit-decision.json";
+    link.click();
+    setStatus("页面没连上本机服务，已下载 edit-decision.json，把它放回素材目录。");
+  }
+}
+function applyStored(state) {
+  if (!state || !Array.isArray(state.clips)) return;
+  const ids = new Set([...document.querySelectorAll("#route .clip")].map((el) => el.dataset.id));
+  if (!state.clips.every((clip) => ids.has(clip.id))) return;
+  document.getElementById("title").value = state.title || "";
+  document.getElementById("spine").value = state.spine || "";
+  document.getElementById("approach").value = state.approach || "";
+  if (Array.isArray(state.beats) && state.beats.length) {
+    document.getElementById("beats").replaceChildren();
+    state.beats.forEach(addBeat);
+    refreshBeatOptions();
+  }
+  const route = document.getElementById("route");
+  state.clips.forEach((clip) => {
+    const el = [...route.children].find((item) => item.dataset.id === clip.id);
+    route.append(el);
+    el.querySelector(".sub").value = clip.subtitle || "";
+    el.querySelector(".in").value = clip.in_sec ?? 0;
+    el.querySelector(".out").value = clip.out_sec ?? 0;
+    setKeep(el, !!clip.keep);
+    const select = el.querySelector(".beat-pick");
+    if ([...select.options].some((item) => item.value === clip.beat)) select.value = clip.beat;
+  });
+  if (state.cover && state.cover.id) {
+    coverEdits[state.cover.id] = {
+      caption_top: state.cover.caption_top || "",
+      caption_bottom: state.cover.caption_bottom || ""
+    };
+    selectCover(state.cover.id);
+  }
+  if (["card", "self"].includes(state.voice_mode)) {
+    const radio = document.querySelector('input[name=voice][value="' + state.voice_mode + '"]');
+    if (radio) radio.checked = true;
+  }
+  applySettings(state);
+}
+function boot() {
+  if (!A || !Array.isArray(A.clips)) {
+    document.body.textContent = "方案数据是空的，让我重新生成这一页。";
+    return;
+  }
+  document.title = A.route || "剪辑方案";
+  const styleName = A.style === "scenic" ? "风景旁白" : "边走边说";
+  document.getElementById("kicker").textContent = [styleName, A.date, A.route].filter(Boolean).join(" · ");
+  document.getElementById("voice-title").textContent = A.style === "scenic" ? "旁白怎么出" : "没解说的段怎么配";
+  document.getElementById("field-volume").value = A.style === "scenic" ? "0.3" : "1";
+  document.getElementById("transition").value = A.style === "scenic" ? "black" : "cut";
+  document.getElementById("map-setting").hidden = !A.map_available;
+  document.getElementById("map-title").value = A.route || "";
+  renderMusic();
+  applySettings(A);
+  document.getElementById("title").value = A.title || "";
+  document.getElementById("spine").value = A.spine || "";
+  document.getElementById("approach").value = A.approach || "";
+  (A.beats || []).forEach(addBeat);
+  A.clips.forEach(renderClip);
+  (A.covers || []).forEach((cover) => {
+    coverDefaults[cover.id] = {
+      caption_top: cover.caption_top || "",
+      caption_bottom: cover.caption_bottom || ""
+    };
+  });
+  renderCovers(A.covers || []);
+  if (A.covers && A.covers[0]) selectCover(A.covers[0].id);
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+    if (saved) applyStored(saved);
+  } catch (error) { /* 旧记录坏了就用最初建议 */ }
+  const samples = document.getElementById("map-samples");
+  if (samples && Array.isArray(A.map_samples) && A.map_samples.length) {
+    samples.hidden = false;
+    const wrap = samples.querySelector(".samples");
+    A.map_samples.forEach((src) => {
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = "路线图叠在画面上";
+      wrap.append(img);
+    });
+  }
+  updateStats();
+}
+document.getElementById("add-beat").addEventListener("click", () => {
+  addBeat({ label: "新的一段", note: "" });
+  refreshBeatOptions();
+});
+document.getElementById("draft").addEventListener("click", () => save(false));
+document.getElementById("go").addEventListener("click", () => save(true));
+document.getElementById("reset").addEventListener("click", () => {
+  localStorage.removeItem(storageKey);
+  location.reload();
+});
+document.body.addEventListener("input", remember);
+document.body.addEventListener("change", (event) => {
+  if (event.target.matches("#field-volume, input[name=voice]")) updateStats();
+  remember();
+});
+document.body.addEventListener("input", (event) => {
+  if (event.target.matches(".sub")) updateStats();
+});
+boot();
+</script>
+</body>
+</html>

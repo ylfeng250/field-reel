@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "tracks": [
+    {
+      "id": "example-track",
+      "title": "曲名",
+      "artist": "作者",
+      "source_url": "https://example.com/track",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "credit": "按许可要求写进投稿简介的署名原文",
+      "local_files": [],
+      "verified": false
+    }
+  ]
+}

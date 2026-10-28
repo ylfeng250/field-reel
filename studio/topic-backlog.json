@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "scoring": {
+    "account_fit": "0-5",
+    "viewer_value": "0-5",
+    "uniqueness": "0-5",
+    "visual_confidence": "0-5",
+    "verifiability": "0-5",
+    "production_ease": "0-5",
+    "minimum_total": 20
+  },
+  "topics": []
+}
